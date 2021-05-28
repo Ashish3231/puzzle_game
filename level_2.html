@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jigsaw</title>
+
+    <!--jquery cdn-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/trontastic/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <!--bootstrap cdn  -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+
+    <!--        css         -->
+    <style>
+        #container{
+            border: 2px solid black;
+            width: 550px;
+            height:40vh;
+            border-radius: 2px solid black;
+            padding: 10px;
+            margin: 100px auto;
+        }
+        #pieceContainer{
+            width: 202px;
+            height: 202px;
+            border: 1px solid black;
+            float: left;
+            text-align: center;
+            font-size: 30px;
+            line-height: 100px;
+            position: relative;
+        }
+        #puzzleContainer{
+            width: 202px;
+            height: 202px;
+            border: 1px solid white; 
+            float: right;
+        }
+        ul{
+            list-style-type: none;
+            text-align: center;
+        }
+        ul button{
+            width: 100px;
+            padding: 5px;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        a{
+            text-decoration: none;
+            color: white;
+        }
+        a:hover{
+            text-decoration: none;
+            color: white;
+        }
+        #btnReset{
+            display: none;
+        }
+        #btnNextLevel{
+            display:none;
+        }
+        .piece{
+            width: 100px;
+            height: 100px;
+            border: 1px solid white;
+            float: left;
+            background: url(project.jpg);
+            background-repeat: no-repeat;
+        }
+
+    </style>
+
+    <!--        javascript      -->
+    <script>
+        $(document).ready(function(){
+            var pieces = createPieces(true);
+            $("#puzzleContainer").html(pieces);
+
+            /* coding for shift all puzzle pieces into pieceContainer */
+            $("#btnStart").click(function(){
+                var pieces = $("#puzzleContainer div");
+                pieces.each(function(){
+
+                    var leftPosition = Math.floor(Math.random()*90) + "px";
+                    var topPosition = Math.floor(Math.random()*90) + "px";
+                    $(this).addClass("draggablePiece").css({                       /*  this means div and adding one more class draggablePiece*/
+                        position: "absolute",
+                        left:leftPosition,
+                        top:topPosition 
+
+                    })
+                    $("#pieceContainer").append($(this)); /* each div element of puzzle appended to pieceContainer */
+                });
+
+                /* providing grid when puzzleContainer is without image  */
+                var emptyString = createPieces(false);
+                
+                 $("#puzzleContainer").html(emptyString);
+
+                 $(this).hide();
+                 $("#btnReset").show();
+                 implementLogic()
+            });
+
+            $("#btnReset").click(function(){
+                var newPieces = createPieces(true);
+                $("#puzzleContainer").html(newPieces);
+                $(this).hide();
+                $("#btnStart").show();
+                $("#pieceContainer").empty();
+            });
+
+            function createPieces(withImage)
+            {
+                var rows = 2, columns = 2;
+                var pieces = "";
+                
+                    
+                for(var i=0,top=0,order=0;i<rows;i++,top-=100)
+                {
+                    for(var j=0,left=0;j<columns;j++,left-=100,order++)
+                    {
+                        if(withImage)
+                        { 
+                            pieces += "<div style='background-position:" + left + "px " + top + "px;' class='piece' data-order=" + order + "></div>";
+                        }
+                        else
+                        {
+                            pieces += "<div style='background-image:none;' class='piece droppableSpace'></div>";
+                        }
+                    }
+                }
+                
+                return pieces;
+            }
+            // logic of drag and drop
+            function checkIfPuzzleSolved()
+            {
+                if($("#puzzleContainer .droppedPiece").length != 4)
+                {
+                    
+                    return false;
+                }
+                for(var k=0;k<4;k++)
+                {
+                    var item = $("#puzzleContainer .droppedPiece:eq(" + k + ")");
+                    var order = item.data("order");
+                    if(k != order )
+                    {
+                        $("#pieceContainer").text("Try Again!");
+                        
+                        return false;
+                    }
+                }
+                $("#btnNextLevel").show();
+                $("#pieceContainer").text("Level 2 Completed");
+                
+                
+                return true;
+            }
+            function implementLogic()
+            {
+                $(".draggablePiece").draggable({
+                    revert:"invalid",       /*  if return false then revert the piece of the puzzle    */
+                    start:function(){
+                        if($(this).hasClass("droppedPiece"))    /* yaha jo apne piece insert kiya puzzle mai woh woh piece apne phir kahi aur insert kr diya ab waha ki class mai droppedPiece class and piecePresent class add ho gyi toh ab new puzzle piece add kroge waha toh add nahi hoga isse reason se remove krna padega   */
+                        {
+                            $(this).removeClass("droppedPiece");
+                            $(this).parent().removeClass("piecePresent");
+                        }
+                    }
+                });
+                $(".droppableSpace").droppable({
+                    hoverClass:"ui-state-highlight", /*  highlight the background where you will drop the puzzle piece   */
+                    accept:function(){
+                        return !$(this).hasClass("piecePresent");    /*  return false if piecePresent class present in droppableSpace    */
+                    },
+                    drop:function(event, ui)
+                    {
+                        var draggableElement = ui.draggable; /* ui ko drag kr skte h    */
+                        var droppedOn = $(this); /*   this means droppableSpace  */
+                        droppedOn.addClass("piecePresent"); /* piecePresent in the space  */
+                        $(draggableElement).addClass("droppedPiece").css({
+                            top:0,                  /*  top 0px left 0px box k inner mai    */
+                            left:0,
+                            position:"relative"
+                        }).appendTo(droppedOn);
+                        
+                        checkIfPuzzleSolved();
+                    }
+                });
+            }
+        });
+    </script>
+
+</head>
+<body>
+    <div id="container" class="container bg-dark">
+        <div id="pieceContainer" class="container bg-light"></div>
+        <div id="puzzleContainer"></div>
+        <ul id="buttons" >
+            <li><button  id="btnStart" class="btn btn-success">Start</button></li>
+            <li><button  id="btnReset" class="btn btn-primary">Reset</button></li>
+            <li><button  id="btnNextLevel" class="btn btn-danger"><a href="level_3.html">Next Level</a></button></li>
+        </ul>
+    </div>
+    
+</body>
+</html>
